@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,7 +14,7 @@ import (
 )
 
 func main() {
-    _ = godotenv.Load() // optional .env loader
+    _ = godotenv.Load() // Load .env file if it exists
 
     dbURL := os.Getenv("DATABASE_URL")
     if dbURL == "" {
@@ -25,6 +26,15 @@ func main() {
         log.Fatal("DB connect error:", err)
     }
     defer st.Close()
+
+	   // log the database version
+    var version string
+    err = st.DB.QueryRow(context.Background(), "SELECT version()").Scan(&version)
+    if err != nil {
+        log.Println("Warning: Could not get DB version:", err)
+    } else {
+        fmt.Println("Connected to:", version)
+    }
 
     r := chi.NewRouter()
     r.Use(middleware.Logger)
