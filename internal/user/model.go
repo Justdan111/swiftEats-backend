@@ -1,8 +1,10 @@
 package user
 
+import "time"
+
 type User struct {
-	ID	   int  `json:"id"`
-	Email  string `json:"email"`
-	PasswordHash string `json:"-"`
-	CreatedAt string `json:"created_at"`
+	ID           string    `db:"id" json:"id"`
+	Email        string    `db:"email" json:"email"`
+	PasswordHash string    `db:"password_hash" json:"-"`
+	CreatedAt    time.Time `db:"created_at" json:"created_at"`
 }
