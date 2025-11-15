@@ -1,48 +1,38 @@
 package main
 
 import (
-	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 
-	"github.com/Justdan111/swiftEats-backend/internal/store"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+
+	"github.com/Justdan111/swiftEats-backend/internal/user"
 )
 
 func main() {
-    _ = godotenv.Load() // Load .env file if it exists
+	godotenv.Load()
+	dbURL := os.Getenv("DATABASE_URL")
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
-    dbURL := os.Getenv("DATABASE_URL")
-    if dbURL == "" {
-        dbURL = "postgres://dev:dev@localhost:5432/swiftEats?sslmode=disable"
-    }
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
 
-    st, err := store.NewStore(dbURL)
-    if err != nil {
-        log.Fatal("DB connect error:", err)
-    }
-    defer st.Close()
+	repo := user.NewRepository(db)
+	service := user.NewService(repo, jwtSecret)
+	handler := user.NewHandler(service)
 
-	   // log the database version
-    var version string
-    err = st.DB.QueryRow(context.Background(), "SELECT version()").Scan(&version)
-    if err != nil {
-        log.Println("Warning: Could not get DB version:", err)
-    } else {
-        fmt.Println("Connected to:", version)
-    }
+	r := mux.NewRouter()
+	r.HandleFunc("/api/register", handler.Register).Methods("POST")
+	r.HandleFunc("/api/login", handler.Login).Methods("POST")
 
-    r := chi.NewRouter()
-    r.Use(middleware.Logger)
-
-    r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-        w.Write([]byte(`{"status":"ok"}`))
-    })
-
-    fmt.Println("🚀 Server running on :8080")
-    log.Fatal(http.ListenAndServe(":8080", r))
+	fmt.Println("Server running on :8080")
+	log.Fatal(http.ListenAndServe(":8080", r))
 }

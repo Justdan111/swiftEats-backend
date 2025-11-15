@@ -44,3 +44,4 @@ func (s *Service) Login(email, password string) (string, error) {
 	return token.SignedString(s.jwtSecret)
 }
 
+
