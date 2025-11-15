@@ -17,7 +17,7 @@ func NewService(repo *Repository, jwtSecret []byte) *Service {
 	return  &Service{repo, jwtSecret}
 }
 
-func (s *Service) RegisterUser(email, password string) error {
+func (s *Service) Register(email, password string) error {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
