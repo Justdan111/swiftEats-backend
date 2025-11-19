@@ -45,17 +45,21 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
-	// Get user from context (added during JWT authentication)
-	u, ok := r.Context().Value("user").(*User)
+	userID, ok := r.Context().Value("user_id").(int)
 	if !ok {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	// Return user details (without password)
+	user, err := h.service.GetUserByID(userID)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
 	response := map[string]interface{}{
-		"id":    u.ID,
-		"email": u.Email,
+		"id":    user.ID,
+		"email": user.Email,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

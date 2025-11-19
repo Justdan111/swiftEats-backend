@@ -11,6 +11,7 @@ import (
 type Service struct {
 	repo      *Repository
 	jwtSecret []byte
+	
 }
 
 func NewService(repo *Repository, jwtSecret []byte) *Service {
