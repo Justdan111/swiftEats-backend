@@ -18,6 +18,7 @@ import (
 func main() {
 	godotenv.Load()
 	dbURL := os.Getenv("DATABASE_URL")
+	fmt.Printf("DEBUG: DATABASE_URL=%q\n", dbURL)
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
 	db, err := sql.Open("postgres", dbURL)

@@ -31,17 +31,20 @@ func AuthMiddleware(jwtSecret []byte) func(http.Handler) http.Handler {
 
 			// --- Extract Claims ---
 			claims, ok := token.Claims.(jwt.MapClaims)
-			if !ok {
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
-				return
-			}
+				if !ok {
+					http.Error(w, "Unauthorized", http.StatusUnauthorized)
+					return
+				}
 
-			userID := int(claims["user_id"].(float64))
+				userID, ok := claims["user_id"].(string)
+				if !ok {
+					http.Error(w, "Unauthorized", http.StatusUnauthorized)
+					return
+				}
 
-			// Put userID into context
-			ctx := context.WithValue(r.Context(), "user_id", userID)
+				ctx := context.WithValue(r.Context(), "user_id", userID)
+				next.ServeHTTP(w, r.WithContext(ctx))
 
-			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
