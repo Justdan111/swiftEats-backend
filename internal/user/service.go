@@ -11,14 +11,11 @@ import (
 type Service struct {
 	repo      *Repository
 	jwtSecret []byte
-	
 }
 
 func NewService(repo *Repository, jwtSecret []byte) *Service {
-	return &Service{repo, jwtSecret}
+	return &Service{repo: repo, jwtSecret: jwtSecret}
 }
-
-
 
 func (s *Service) Register(email, password string) error {
 	if len(password) < 6 {
@@ -32,7 +29,6 @@ func (s *Service) Register(email, password string) error {
 
 	return s.repo.CreateUser(email, string(hashed))
 }
-
 
 func (s *Service) Login(email, password string) (string, error) {
 	u, err := s.repo.GetUserByEmail(email)
@@ -52,4 +48,12 @@ func (s *Service) Login(email, password string) (string, error) {
 	})
 
 	return token.SignedString(s.jwtSecret)
+}
+
+// GetUserByID returns a user by their ID (UUID string).
+func (s *Service) GetUserByID(id string) (*User, error) {
+	if s == nil || s.repo == nil {
+		return nil, errors.New("service not initialized")
+	}
+	return s.repo.GetUserByID(id)
 }
