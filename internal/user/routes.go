@@ -16,7 +16,9 @@ func Routes(handler *Handler, authMiddleware func(http.Handler) http.Handler) ht
 	r.Group(func(pr chi.Router) {
 		pr.Use(authMiddleware)
 
-		pr.Get("/me", handler.Me)
+		// Add protected routes here
+
+		// pr.Get("/me", handler.Me)
 	})
 
 	return r
