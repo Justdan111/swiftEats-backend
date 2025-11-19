@@ -43,3 +43,21 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(map[string]string{"token": token})
 }
+
+func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
+	// Get user from context (added during JWT authentication)
+	u, ok := r.Context().Value("user").(*User)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Return user details (without password)
+	response := map[string]interface{}{
+		"id":    u.ID,
+		"email": u.Email,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}

@@ -18,7 +18,7 @@ func Routes(handler *Handler, authMiddleware func(http.Handler) http.Handler) ht
 
 		// Add protected routes here
 
-		// pr.Get("/me", handler.Me)
+		pr.Get("/me", handler.Me)
 	})
 
 	return r
