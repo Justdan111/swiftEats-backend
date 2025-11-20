@@ -36,7 +36,7 @@ func (s *Service) Login(email, password string) (string, error) {
 		return "", errors.New("invalid credentials")
 	}
 
-	// IMPORTANT: use PasswordHash (matches DB)
+	
 	err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password))
 	if err != nil {
 		return "", errors.New("invalid credentials")
@@ -50,7 +50,7 @@ func (s *Service) Login(email, password string) (string, error) {
 	return token.SignedString(s.jwtSecret)
 }
 
-// GetUserByID returns a user by their ID (UUID string).
+
 func (s *Service) GetUserByID(id string) (*User, error) {
 	if s == nil || s.repo == nil {
 		return nil, errors.New("service not initialized")

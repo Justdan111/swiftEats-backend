@@ -29,7 +29,7 @@ func AuthMiddleware(jwtSecret []byte) func(http.Handler) http.Handler {
 				return
 			}
 
-			// --- Extract Claims ---
+			// Extract user ID from token claims
 			claims, ok := token.Claims.(jwt.MapClaims)
 				if !ok {
 					http.Error(w, "Unauthorized", http.StatusUnauthorized)
