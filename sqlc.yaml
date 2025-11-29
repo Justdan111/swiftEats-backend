@@ -1,0 +1,12 @@
+version: "1"
+packages:
+  - name: "db"
+    path: "internal/db"
+    engine: "postgresql"
+    schema: "migrations/*.up.sql"
+    queries: "db/queries/*.sql"
+    emit_json_tags: true
+    emit_interface: false
+    go: 
+      package: "db"
+      module: "github.com/Justdan111/swiftEats-backend"
