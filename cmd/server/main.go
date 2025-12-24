@@ -19,16 +19,16 @@ func main() {
 	dbURL := os.Getenv("DATABASE_URL")
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
-	// Initialize database with pgxpool
-	db, err := store.NewStore(dbURL)
+	// Initialize database with sql.DB using pgx driver
+	dbStore, err := store.NewStore(dbURL)
 	if err != nil {
 		log.Fatal("❌ Cannot connect to database:", err)
 	}
-	defer db.Close()
+	defer dbStore.Close()
 	fmt.Println("🚀 Connected to database successfully")
 
-	// Initialize user module with pgxpool
-	repo := user.NewRepository(db.DB)
+	// Initialize user module with database
+	repo := user.NewRepository(dbStore.DB)
 	service := user.NewService(repo, jwtSecret)
 	handler := user.NewHandler(service)
 
