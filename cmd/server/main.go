@@ -36,17 +36,17 @@ func main() {
 	authMiddleware := middleware.AuthMiddleware(jwtSecret)
 	adminMiddleware := middleware.AdminMiddleware(jwtSecret)
 
-	// ============ USER MODULE ============
+	// USER MODULE 
 	userRepo := user.NewRepository(dbStore.DB)
 	userService := user.NewService(userRepo, jwtSecret)
 	userHandler := user.NewHandler(userService)
 
-	// ============ RESTAURANT MODULE ============
+	// RESTAURANT MODULE
 	restaurantRepo := restaurant.NewRepository(queries)
 	restaurantService := restaurant.NewService(restaurantRepo)
 	restaurantHandler := restaurant.NewHandler(restaurantService)
 
-	// ============ ROUTER SETUP ============
+	// ROUTER SETUP
 	r := mux.NewRouter()
 
 	// Health Check Route

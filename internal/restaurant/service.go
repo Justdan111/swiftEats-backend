@@ -14,7 +14,7 @@ func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
 }
 
-// ============ USER QUERIES (Read Only) ============
+//  USER QUERIES (Read Only) 
 
 func (s *Service) ListRestaurants(ctx context.Context) ([]Restaurant, error) {
 	rows, err := s.repo.ListRestaurants(ctx)
@@ -53,7 +53,7 @@ func (s *Service) GetMenuByRestaurantID(ctx context.Context, restaurantID string
 	return items, nil
 }
 
-// ============ ADMIN QUERIES ============
+//  ADMIN QUERIES 
 
 func (s *Service) CreateRestaurant(ctx context.Context, input RestaurantInput) (Restaurant, error) {
 	r, err := s.repo.CreateRestaurant(ctx, input.Name, input.Description, input.Address)
@@ -75,7 +75,7 @@ func (s *Service) DeleteRestaurant(ctx context.Context, id string) error {
 	return s.repo.DeleteRestaurant(ctx, id)
 }
 
-// ============ MENU ITEM ADMIN QUERIES ============
+//  MENU ITEM ADMIN QUERIES 
 
 func (s *Service) CreateMenuItem(ctx context.Context, input MenuItemInput) (MenuItem, error) {
 	restaurantID := ""
@@ -111,7 +111,7 @@ func (s *Service) UpdateMenuItemAvailability(ctx context.Context, id string, isA
 	return s.repo.UpdateMenuItemAvailability(ctx, id, isAvailable)
 }
 
-// ============ Helpers ============
+//  Helpers 
 
 func (s *Service) dbRestaurantToModel(r db.Restaurant) Restaurant {
 	return Restaurant{

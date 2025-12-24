@@ -15,7 +15,7 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
-// ============ USER ENDPOINTS (Read Only) ============
+
 
 // ListRestaurants returns all restaurants
 func (h *Handler) ListRestaurants(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +57,7 @@ func (h *Handler) GetMenu(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(menu)
 }
 
-// ============ ADMIN ENDPOINTS (Create, Update, Delete) ============
+
 
 // CreateRestaurant creates a new restaurant (admin only)
 func (h *Handler) CreateRestaurant(w http.ResponseWriter, r *http.Request) {
@@ -123,7 +123,7 @@ func (h *Handler) DeleteRestaurant(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// ============ ADMIN MENU ITEM ENDPOINTS ============
+
 
 // CreateMenuItem creates a new menu item (admin only)
 func (h *Handler) CreateMenuItem(w http.ResponseWriter, r *http.Request) {

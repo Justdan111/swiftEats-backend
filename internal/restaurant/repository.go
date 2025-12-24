@@ -16,7 +16,7 @@ func NewRepository(q *db.Queries) *Repository {
 	return &Repository{q: q}
 }
 
-// ============ USER QUERIES (Read Only) ============
+//  USER QUERIES (Read Only) 
 
 // ListRestaurants returns all restaurants
 func (r *Repository) ListRestaurants(ctx context.Context) ([]db.Restaurant, error) {
@@ -41,7 +41,7 @@ func (r *Repository) GetMenuItemsByRestaurantID(ctx context.Context, restaurantI
 	return r.q.GetMenuItemsByRestaurantID(ctx, uuid.NullUUID{UUID: id, Valid: true})
 }
 
-// ============ ADMIN QUERIES (Create, Update, Delete) ============
+//  ADMIN QUERIES (Create, Update, Delete) 
 
 // CreateRestaurant creates a new restaurant (admin only)
 func (r *Repository) CreateRestaurant(ctx context.Context, name, description, address string) (db.Restaurant, error) {
@@ -76,7 +76,7 @@ func (r *Repository) DeleteRestaurant(ctx context.Context, id string) error {
 	return r.q.DeleteRestaurant(ctx, restaurantID)
 }
 
-// ============ MENU ITEM ADMIN QUERIES ============
+//  ADMIN MENU ITEM QUERIES 
 
 // CreateMenuItem creates a new menu item (admin only)
 func (r *Repository) CreateMenuItem(ctx context.Context, restaurantID, categoryID, name, description string, priceCents int32) (db.MenuItem, error) {

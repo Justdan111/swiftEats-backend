@@ -22,7 +22,7 @@ type MenuItem struct {
 	CategoryID   uuid.NullUUID  `json:"category_id"`
 	Name         string         `json:"name"`
 	Description  sql.NullString `json:"description"`
-	PriceCents   int32          `json:"price_cents"` // In cents, not float
+	PriceCents   int32          `json:"price_cents"` 
 	IsAvailable  sql.NullBool   `json:"is_available"`
 	CreatedAt    sql.NullTime   `json:"created_at"`
 }
