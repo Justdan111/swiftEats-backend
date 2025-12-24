@@ -2,25 +2,24 @@ package restaurant
 
 import (
 	"database/sql"
-	"time"
 
 	"github.com/google/uuid"
 )
 
 // Restaurant represents a restaurant (read for user/admin)
 type Restaurant struct {
-	ID          uuid.UUID       `json:"id"`
-	Name        string          `json:"name"`
-	Description sql.NullString  `json:"description"`
-	Address     string          `json:"address"`
-	CreatedAt   sql.NullTime    `json:"created_at"`
+	ID          uuid.UUID      `json:"id"`
+	Name        string         `json:"name"`
+	Description sql.NullString `json:"description"`
+	Address     sql.NullString `json:"address"`
+	CreatedAt   sql.NullTime   `json:"created_at"`
 }
 
 // MenuItem represents a menu item with price in cents
 type MenuItem struct {
 	ID           uuid.UUID      `json:"id"`
 	RestaurantID uuid.NullUUID  `json:"restaurant_id"`
-	CategoryID   sql.NullString `json:"category_id"`
+	CategoryID   uuid.NullUUID  `json:"category_id"`
 	Name         string         `json:"name"`
 	Description  sql.NullString `json:"description"`
 	PriceCents   int32          `json:"price_cents"` // In cents, not float

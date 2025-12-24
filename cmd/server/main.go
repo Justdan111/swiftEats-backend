@@ -9,7 +9,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 
+	"github.com/Justdan111/swiftEats-backend/internal/db"
 	"github.com/Justdan111/swiftEats-backend/internal/middleware"
+	"github.com/Justdan111/swiftEats-backend/internal/restaurant"
 	"github.com/Justdan111/swiftEats-backend/internal/store"
 	"github.com/Justdan111/swiftEats-backend/internal/user"
 )
@@ -27,13 +29,24 @@ func main() {
 	defer dbStore.Close()
 	fmt.Println("🚀 Connected to database successfully")
 
-	// Initialize user module with database
-	repo := user.NewRepository(dbStore.DB)
-	service := user.NewService(repo, jwtSecret)
-	handler := user.NewHandler(service)
+	// Initialize SQLC queries
+	queries := db.New(dbStore.DB)
 
+	// Initialize middlewares
 	authMiddleware := middleware.AuthMiddleware(jwtSecret)
+	adminMiddleware := middleware.AdminMiddleware(jwtSecret)
 
+	// ============ USER MODULE ============
+	userRepo := user.NewRepository(dbStore.DB)
+	userService := user.NewService(userRepo, jwtSecret)
+	userHandler := user.NewHandler(userService)
+
+	// ============ RESTAURANT MODULE ============
+	restaurantRepo := restaurant.NewRepository(queries)
+	restaurantService := restaurant.NewService(restaurantRepo)
+	restaurantHandler := restaurant.NewHandler(restaurantService)
+
+	// ============ ROUTER SETUP ============
 	r := mux.NewRouter()
 
 	// Health Check Route
@@ -43,11 +56,14 @@ func main() {
 	}).Methods("GET")
 
 	// Public auth endpoints
-	r.HandleFunc("/api/register", handler.Register).Methods("POST")
-	r.HandleFunc("/api/login", handler.Login).Methods("POST")
+	r.HandleFunc("/api/register", userHandler.Register).Methods("POST")
+	r.HandleFunc("/api/login", userHandler.Login).Methods("POST")
 
-	// 🔒 Protected route
-	r.Handle("/api/me", authMiddleware(http.HandlerFunc(handler.Me))).Methods("GET")
+	// 🔒 Protected user route
+	r.Handle("/api/me", authMiddleware(http.HandlerFunc(userHandler.Me))).Methods("GET")
+
+	// Restaurant routes (user reads + admin writes)
+	restaurant.RegisterRoutes(r, restaurantHandler, adminMiddleware)
 
 	fmt.Println("Server running on :8080")
 	log.Fatal(http.ListenAndServe(":8080", r))
