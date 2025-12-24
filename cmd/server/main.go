@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,31 +8,27 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
 
 	"github.com/Justdan111/swiftEats-backend/internal/middleware"
+	"github.com/Justdan111/swiftEats-backend/internal/store"
 	"github.com/Justdan111/swiftEats-backend/internal/user"
 )
 
 func main() {
 	godotenv.Load()
 	dbURL := os.Getenv("DATABASE_URL")
-	// fmt.Printf("DEBUG: DATABASE_URL=%q\n", dbURL)
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
-	db, err := sql.Open("postgres", dbURL)
+	// Initialize database with pgxpool
+	db, err := store.NewStore(dbURL)
 	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	// Test DB connection
-	if err := db.Ping(); err != nil {
 		log.Fatal("❌ Cannot connect to database:", err)
 	}
+	defer db.Close()
 	fmt.Println("🚀 Connected to database successfully")
 
-	repo := user.NewRepository(db)
+	// Initialize user module with pgxpool
+	repo := user.NewRepository(db.DB)
 	service := user.NewService(repo, jwtSecret)
 	handler := user.NewHandler(service)
 

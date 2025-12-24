@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -17,7 +18,7 @@ func NewService(repo *Repository, jwtSecret []byte) *Service {
 	return &Service{repo: repo, jwtSecret: jwtSecret}
 }
 
-func (s *Service) Register(email, password string) error {
+func (s *Service) Register(ctx context.Context, email, password string) error {
 	if len(password) < 6 {
 		return errors.New("password must be at least 6 characters")
 	}
@@ -27,16 +28,15 @@ func (s *Service) Register(email, password string) error {
 		return err
 	}
 
-	return s.repo.CreateUser(email, string(hashed))
+	return s.repo.CreateUser(ctx, email, string(hashed))
 }
 
-func (s *Service) Login(email, password string) (string, error) {
-	u, err := s.repo.GetUserByEmail(email)
+func (s *Service) Login(ctx context.Context, email, password string) (string, error) {
+	u, err := s.repo.GetUserByEmail(ctx, email)
 	if err != nil {
 		return "", errors.New("invalid credentials")
 	}
 
-	
 	err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password))
 	if err != nil {
 		return "", errors.New("invalid credentials")
@@ -50,10 +50,9 @@ func (s *Service) Login(email, password string) (string, error) {
 	return token.SignedString(s.jwtSecret)
 }
 
-
-func (s *Service) GetUserByID(id string) (*User, error) {
+func (s *Service) GetUserByID(ctx context.Context, id string) (*User, error) {
 	if s == nil || s.repo == nil {
 		return nil, errors.New("service not initialized")
 	}
-	return s.repo.GetUserByID(id)
+	return s.repo.GetUserByID(ctx, id)
 }

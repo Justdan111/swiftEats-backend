@@ -19,16 +19,15 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 	}
 	json.NewDecoder(r.Body).Decode(&req)
-	err := h.service.Register(req.Email, req.Password)
+	err := h.service.Register(r.Context(), req.Email, req.Password)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{"message": "user created"})
-	
-}
 
+}
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req struct {
@@ -36,7 +35,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 	}
 	json.NewDecoder(r.Body).Decode(&req)
-	token, err := h.service.Login(req.Email, req.Password)
+	token, err := h.service.Login(r.Context(), req.Email, req.Password)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -45,18 +44,18 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
-    userID, ok := r.Context().Value("user_id").(string)
-    if !ok {
-        http.Error(w, "Unauthorized", http.StatusUnauthorized)
-        return
-    }
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
-    user, err := h.service.GetUserByID(userID)
-    if err != nil {
-        http.Error(w, "User not found", http.StatusNotFound)
-        return
-    }
+	user, err := h.service.GetUserByID(r.Context(), userID)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(user)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
 }

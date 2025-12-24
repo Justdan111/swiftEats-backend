@@ -13,6 +13,67 @@ import (
 	"github.com/sqlc-dev/pqtype"
 )
 
+const addCartItem = `-- name: AddCartItem :one
+INSERT INTO cart_items (cart_id, menu_item_id, quantity, price_cents)
+VALUES ($1, $2, $3, $4)
+RETURNING id, cart_id, menu_item_id, quantity, price_cents, created_at
+`
+
+type AddCartItemParams struct {
+	CartID     uuid.NullUUID `json:"cart_id"`
+	MenuItemID uuid.NullUUID `json:"menu_item_id"`
+	Quantity   int32         `json:"quantity"`
+	PriceCents int32         `json:"price_cents"`
+}
+
+func (q *Queries) AddCartItem(ctx context.Context, arg AddCartItemParams) (CartItem, error) {
+	row := q.queryRow(ctx, q.addCartItemStmt, addCartItem,
+		arg.CartID,
+		arg.MenuItemID,
+		arg.Quantity,
+		arg.PriceCents,
+	)
+	var i CartItem
+	err := row.Scan(
+		&i.ID,
+		&i.CartID,
+		&i.MenuItemID,
+		&i.Quantity,
+		&i.PriceCents,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const clearCart = `-- name: ClearCart :exec
+DELETE FROM cart_items
+WHERE cart_id = $1
+`
+
+func (q *Queries) ClearCart(ctx context.Context, cartID uuid.NullUUID) error {
+	_, err := q.exec(ctx, q.clearCartStmt, clearCart, cartID)
+	return err
+}
+
+const createCart = `-- name: CreateCart :one
+INSERT INTO carts (user_id)
+VALUES ($1)
+ON CONFLICT (user_id) DO NOTHING
+RETURNING id, user_id, created_at, updated_at
+`
+
+func (q *Queries) CreateCart(ctx context.Context, userID uuid.NullUUID) (Cart, error) {
+	row := q.queryRow(ctx, q.createCartStmt, createCart, userID)
+	var i Cart
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const createOrder = `-- name: CreateOrder :one
 INSERT INTO orders (user_id, restaurant_id, total_cents, status, idempotency_key)
 VALUES ($1,$2,$3,$4,$5)
@@ -94,6 +155,100 @@ func (q *Queries) FindOrderByIdempotency(ctx context.Context, idempotencyKey sql
 	return i, err
 }
 
+const getAllRestaurants = `-- name: GetAllRestaurants :many
+
+SELECT id, name, description, address, created_at
+FROM restaurants
+ORDER BY created_at DESC
+`
+
+// ============ RESTAURANT QUERIES ============
+func (q *Queries) GetAllRestaurants(ctx context.Context) ([]Restaurant, error) {
+	rows, err := q.query(ctx, q.getAllRestaurantsStmt, getAllRestaurants)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Restaurant
+	for rows.Next() {
+		var i Restaurant
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.Address,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getCartByUserID = `-- name: GetCartByUserID :one
+
+SELECT id, user_id, created_at, updated_at
+FROM carts
+WHERE user_id = $1
+`
+
+// ============ CART QUERIES ============
+func (q *Queries) GetCartByUserID(ctx context.Context, userID uuid.NullUUID) (Cart, error) {
+	row := q.queryRow(ctx, q.getCartByUserIDStmt, getCartByUserID, userID)
+	var i Cart
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getCartItemsByCartID = `-- name: GetCartItemsByCartID :many
+SELECT id, cart_id, menu_item_id, quantity, price_cents, created_at
+FROM cart_items
+WHERE cart_id = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) GetCartItemsByCartID(ctx context.Context, cartID uuid.NullUUID) ([]CartItem, error) {
+	rows, err := q.query(ctx, q.getCartItemsByCartIDStmt, getCartItemsByCartID, cartID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CartItem
+	for rows.Next() {
+		var i CartItem
+		if err := rows.Scan(
+			&i.ID,
+			&i.CartID,
+			&i.MenuItemID,
+			&i.Quantity,
+			&i.PriceCents,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getMenuItemByID = `-- name: GetMenuItemByID :one
 SELECT id, restaurant_id, category_id, name, description, price_cents, is_available, created_at
 FROM menu_items
@@ -154,6 +309,45 @@ func (q *Queries) GetMenuItemsByIDs(ctx context.Context, id uuid.UUID) ([]MenuIt
 	return items, nil
 }
 
+const getMenuItemsByRestaurantID = `-- name: GetMenuItemsByRestaurantID :many
+SELECT id, restaurant_id, category_id, name, description, price_cents, is_available, created_at
+FROM menu_items
+WHERE restaurant_id = $1 AND is_available = true
+ORDER BY name ASC
+`
+
+func (q *Queries) GetMenuItemsByRestaurantID(ctx context.Context, restaurantID uuid.NullUUID) ([]MenuItem, error) {
+	rows, err := q.query(ctx, q.getMenuItemsByRestaurantIDStmt, getMenuItemsByRestaurantID, restaurantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []MenuItem
+	for rows.Next() {
+		var i MenuItem
+		if err := rows.Scan(
+			&i.ID,
+			&i.RestaurantID,
+			&i.CategoryID,
+			&i.Name,
+			&i.Description,
+			&i.PriceCents,
+			&i.IsAvailable,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getOrderByID = `-- name: GetOrderByID :one
 SELECT id, user_id, restaurant_id, total_cents, status, idempotency_key, payment_provider, payment_reference, created_at
 FROM orders WHERE id = $1
@@ -174,6 +368,163 @@ func (q *Queries) GetOrderByID(ctx context.Context, id uuid.UUID) (Order, error)
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const getOrderCount = `-- name: GetOrderCount :one
+SELECT COUNT(*) as count
+FROM orders
+WHERE user_id = $1
+`
+
+func (q *Queries) GetOrderCount(ctx context.Context, userID uuid.NullUUID) (int64, error) {
+	row := q.queryRow(ctx, q.getOrderCountStmt, getOrderCount, userID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const getOrderItems = `-- name: GetOrderItems :many
+SELECT id, order_id, menu_item_id, quantity, price_cents, created_at
+FROM order_items
+WHERE order_id = $1
+ORDER BY created_at ASC
+`
+
+func (q *Queries) GetOrderItems(ctx context.Context, orderID uuid.NullUUID) ([]OrderItem, error) {
+	rows, err := q.query(ctx, q.getOrderItemsStmt, getOrderItems, orderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OrderItem
+	for rows.Next() {
+		var i OrderItem
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrderID,
+			&i.MenuItemID,
+			&i.Quantity,
+			&i.PriceCents,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPaymentByOrderID = `-- name: GetPaymentByOrderID :one
+
+SELECT id, order_id, provider, provider_reference, amount_cents, status, raw_payload, created_at
+FROM payments
+WHERE order_id = $1
+`
+
+// ============ PAYMENT QUERIES ============
+func (q *Queries) GetPaymentByOrderID(ctx context.Context, orderID uuid.NullUUID) (Payment, error) {
+	row := q.queryRow(ctx, q.getPaymentByOrderIDStmt, getPaymentByOrderID, orderID)
+	var i Payment
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.Provider,
+		&i.ProviderReference,
+		&i.AmountCents,
+		&i.Status,
+		&i.RawPayload,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getPaymentByProviderReference = `-- name: GetPaymentByProviderReference :one
+SELECT id, order_id, provider, provider_reference, amount_cents, status, raw_payload, created_at
+FROM payments
+WHERE provider_reference = $1
+`
+
+func (q *Queries) GetPaymentByProviderReference(ctx context.Context, providerReference sql.NullString) (Payment, error) {
+	row := q.queryRow(ctx, q.getPaymentByProviderReferenceStmt, getPaymentByProviderReference, providerReference)
+	var i Payment
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.Provider,
+		&i.ProviderReference,
+		&i.AmountCents,
+		&i.Status,
+		&i.RawPayload,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getRestaurantByID = `-- name: GetRestaurantByID :one
+SELECT id, name, description, address, created_at
+FROM restaurants
+WHERE id = $1
+`
+
+func (q *Queries) GetRestaurantByID(ctx context.Context, id uuid.UUID) (Restaurant, error) {
+	row := q.queryRow(ctx, q.getRestaurantByIDStmt, getRestaurantByID, id)
+	var i Restaurant
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Address,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getUserOrders = `-- name: GetUserOrders :many
+
+SELECT id, user_id, restaurant_id, total_cents, status, idempotency_key, payment_provider, payment_reference, created_at
+FROM orders
+WHERE user_id = $1
+ORDER BY created_at DESC
+`
+
+// ============ ORDER QUERIES ============
+func (q *Queries) GetUserOrders(ctx context.Context, userID uuid.NullUUID) ([]Order, error) {
+	rows, err := q.query(ctx, q.getUserOrdersStmt, getUserOrders, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Order
+	for rows.Next() {
+		var i Order
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.RestaurantID,
+			&i.TotalCents,
+			&i.Status,
+			&i.IdempotencyKey,
+			&i.PaymentProvider,
+			&i.PaymentReference,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const insertPayment = `-- name: InsertPayment :one
@@ -214,6 +565,48 @@ func (q *Queries) InsertPayment(ctx context.Context, arg InsertPaymentParams) (P
 	return i, err
 }
 
+const removeCartItem = `-- name: RemoveCartItem :exec
+DELETE FROM cart_items
+WHERE id = $1 AND cart_id = $2
+`
+
+type RemoveCartItemParams struct {
+	ID     uuid.UUID     `json:"id"`
+	CartID uuid.NullUUID `json:"cart_id"`
+}
+
+func (q *Queries) RemoveCartItem(ctx context.Context, arg RemoveCartItemParams) error {
+	_, err := q.exec(ctx, q.removeCartItemStmt, removeCartItem, arg.ID, arg.CartID)
+	return err
+}
+
+const updateCartItemQuantity = `-- name: UpdateCartItemQuantity :one
+UPDATE cart_items
+SET quantity = $2
+WHERE id = $1 AND cart_id = $3
+RETURNING id, cart_id, menu_item_id, quantity, price_cents, created_at
+`
+
+type UpdateCartItemQuantityParams struct {
+	ID       uuid.UUID     `json:"id"`
+	Quantity int32         `json:"quantity"`
+	CartID   uuid.NullUUID `json:"cart_id"`
+}
+
+func (q *Queries) UpdateCartItemQuantity(ctx context.Context, arg UpdateCartItemQuantityParams) (CartItem, error) {
+	row := q.queryRow(ctx, q.updateCartItemQuantityStmt, updateCartItemQuantity, arg.ID, arg.Quantity, arg.CartID)
+	var i CartItem
+	err := row.Scan(
+		&i.ID,
+		&i.CartID,
+		&i.MenuItemID,
+		&i.Quantity,
+		&i.PriceCents,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const updateOrderPaymentAndStatus = `-- name: UpdateOrderPaymentAndStatus :exec
 UPDATE orders SET payment_reference = $2, payment_provider = $3, status = $4 WHERE id = $1
 `
@@ -232,5 +625,21 @@ func (q *Queries) UpdateOrderPaymentAndStatus(ctx context.Context, arg UpdateOrd
 		arg.PaymentProvider,
 		arg.Status,
 	)
+	return err
+}
+
+const updatePaymentStatus = `-- name: UpdatePaymentStatus :exec
+UPDATE payments
+SET status = $2
+WHERE id = $1
+`
+
+type UpdatePaymentStatusParams struct {
+	ID     uuid.UUID      `json:"id"`
+	Status sql.NullString `json:"status"`
+}
+
+func (q *Queries) UpdatePaymentStatus(ctx context.Context, arg UpdatePaymentStatusParams) error {
+	_, err := q.exec(ctx, q.updatePaymentStatusStmt, updatePaymentStatus, arg.ID, arg.Status)
 	return err
 }
