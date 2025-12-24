@@ -123,3 +123,42 @@ WHERE id = $1;
 SELECT id, order_id, provider, provider_reference, amount_cents, status, raw_payload, created_at
 FROM payments
 WHERE provider_reference = $1;
+
+-- ============ ADMIN RESTAURANT QUERIES ============
+
+-- name: CreateRestaurant :one
+INSERT INTO restaurants (name, description, address)
+VALUES ($1, $2, $3)
+RETURNING id, name, description, address, created_at;
+
+-- name: UpdateRestaurant :one
+UPDATE restaurants
+SET name = $2, description = $3, address = $4
+WHERE id = $1
+RETURNING id, name, description, address, created_at;
+
+-- name: DeleteRestaurant :exec
+DELETE FROM restaurants
+WHERE id = $1;
+
+-- ============ ADMIN MENU ITEM QUERIES ============
+
+-- name: CreateMenuItem :one
+INSERT INTO menu_items (restaurant_id, category_id, name, description, price_cents, is_available)
+VALUES ($1, $2, $3, $4, $5, true)
+RETURNING id, restaurant_id, category_id, name, description, price_cents, is_available, created_at;
+
+-- name: UpdateMenuItem :one
+UPDATE menu_items
+SET name = $2, description = $3, price_cents = $4, is_available = $5
+WHERE id = $1
+RETURNING id, restaurant_id, category_id, name, description, price_cents, is_available, created_at;
+
+-- name: DeleteMenuItem :exec
+DELETE FROM menu_items
+WHERE id = $1;
+
+-- name: UpdateMenuItemAvailability :exec
+UPDATE menu_items
+SET is_available = $2
+WHERE id = $1;

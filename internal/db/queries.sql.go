@@ -74,6 +74,44 @@ func (q *Queries) CreateCart(ctx context.Context, userID uuid.NullUUID) (Cart, e
 	return i, err
 }
 
+const createMenuItem = `-- name: CreateMenuItem :one
+
+INSERT INTO menu_items (restaurant_id, category_id, name, description, price_cents, is_available)
+VALUES ($1, $2, $3, $4, $5, true)
+RETURNING id, restaurant_id, category_id, name, description, price_cents, is_available, created_at
+`
+
+type CreateMenuItemParams struct {
+	RestaurantID uuid.NullUUID  `json:"restaurant_id"`
+	CategoryID   uuid.NullUUID  `json:"category_id"`
+	Name         string         `json:"name"`
+	Description  sql.NullString `json:"description"`
+	PriceCents   int32          `json:"price_cents"`
+}
+
+// ============ ADMIN MENU ITEM QUERIES ============
+func (q *Queries) CreateMenuItem(ctx context.Context, arg CreateMenuItemParams) (MenuItem, error) {
+	row := q.queryRow(ctx, q.createMenuItemStmt, createMenuItem,
+		arg.RestaurantID,
+		arg.CategoryID,
+		arg.Name,
+		arg.Description,
+		arg.PriceCents,
+	)
+	var i MenuItem
+	err := row.Scan(
+		&i.ID,
+		&i.RestaurantID,
+		&i.CategoryID,
+		&i.Name,
+		&i.Description,
+		&i.PriceCents,
+		&i.IsAvailable,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const createOrder = `-- name: CreateOrder :one
 INSERT INTO orders (user_id, restaurant_id, total_cents, status, idempotency_key)
 VALUES ($1,$2,$3,$4,$5)
@@ -130,6 +168,53 @@ func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams
 		arg.Quantity,
 		arg.PriceCents,
 	)
+	return err
+}
+
+const createRestaurant = `-- name: CreateRestaurant :one
+
+INSERT INTO restaurants (name, description, address)
+VALUES ($1, $2, $3)
+RETURNING id, name, description, address, created_at
+`
+
+type CreateRestaurantParams struct {
+	Name        string         `json:"name"`
+	Description sql.NullString `json:"description"`
+	Address     sql.NullString `json:"address"`
+}
+
+// ============ ADMIN RESTAURANT QUERIES ============
+func (q *Queries) CreateRestaurant(ctx context.Context, arg CreateRestaurantParams) (Restaurant, error) {
+	row := q.queryRow(ctx, q.createRestaurantStmt, createRestaurant, arg.Name, arg.Description, arg.Address)
+	var i Restaurant
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Address,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const deleteMenuItem = `-- name: DeleteMenuItem :exec
+DELETE FROM menu_items
+WHERE id = $1
+`
+
+func (q *Queries) DeleteMenuItem(ctx context.Context, id uuid.UUID) error {
+	_, err := q.exec(ctx, q.deleteMenuItemStmt, deleteMenuItem, id)
+	return err
+}
+
+const deleteRestaurant = `-- name: DeleteRestaurant :exec
+DELETE FROM restaurants
+WHERE id = $1
+`
+
+func (q *Queries) DeleteRestaurant(ctx context.Context, id uuid.UUID) error {
+	_, err := q.exec(ctx, q.deleteRestaurantStmt, deleteRestaurant, id)
 	return err
 }
 
@@ -607,6 +692,59 @@ func (q *Queries) UpdateCartItemQuantity(ctx context.Context, arg UpdateCartItem
 	return i, err
 }
 
+const updateMenuItem = `-- name: UpdateMenuItem :one
+UPDATE menu_items
+SET name = $2, description = $3, price_cents = $4, is_available = $5
+WHERE id = $1
+RETURNING id, restaurant_id, category_id, name, description, price_cents, is_available, created_at
+`
+
+type UpdateMenuItemParams struct {
+	ID          uuid.UUID      `json:"id"`
+	Name        string         `json:"name"`
+	Description sql.NullString `json:"description"`
+	PriceCents  int32          `json:"price_cents"`
+	IsAvailable sql.NullBool   `json:"is_available"`
+}
+
+func (q *Queries) UpdateMenuItem(ctx context.Context, arg UpdateMenuItemParams) (MenuItem, error) {
+	row := q.queryRow(ctx, q.updateMenuItemStmt, updateMenuItem,
+		arg.ID,
+		arg.Name,
+		arg.Description,
+		arg.PriceCents,
+		arg.IsAvailable,
+	)
+	var i MenuItem
+	err := row.Scan(
+		&i.ID,
+		&i.RestaurantID,
+		&i.CategoryID,
+		&i.Name,
+		&i.Description,
+		&i.PriceCents,
+		&i.IsAvailable,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const updateMenuItemAvailability = `-- name: UpdateMenuItemAvailability :exec
+UPDATE menu_items
+SET is_available = $2
+WHERE id = $1
+`
+
+type UpdateMenuItemAvailabilityParams struct {
+	ID          uuid.UUID    `json:"id"`
+	IsAvailable sql.NullBool `json:"is_available"`
+}
+
+func (q *Queries) UpdateMenuItemAvailability(ctx context.Context, arg UpdateMenuItemAvailabilityParams) error {
+	_, err := q.exec(ctx, q.updateMenuItemAvailabilityStmt, updateMenuItemAvailability, arg.ID, arg.IsAvailable)
+	return err
+}
+
 const updateOrderPaymentAndStatus = `-- name: UpdateOrderPaymentAndStatus :exec
 UPDATE orders SET payment_reference = $2, payment_provider = $3, status = $4 WHERE id = $1
 `
@@ -642,4 +780,36 @@ type UpdatePaymentStatusParams struct {
 func (q *Queries) UpdatePaymentStatus(ctx context.Context, arg UpdatePaymentStatusParams) error {
 	_, err := q.exec(ctx, q.updatePaymentStatusStmt, updatePaymentStatus, arg.ID, arg.Status)
 	return err
+}
+
+const updateRestaurant = `-- name: UpdateRestaurant :one
+UPDATE restaurants
+SET name = $2, description = $3, address = $4
+WHERE id = $1
+RETURNING id, name, description, address, created_at
+`
+
+type UpdateRestaurantParams struct {
+	ID          uuid.UUID      `json:"id"`
+	Name        string         `json:"name"`
+	Description sql.NullString `json:"description"`
+	Address     sql.NullString `json:"address"`
+}
+
+func (q *Queries) UpdateRestaurant(ctx context.Context, arg UpdateRestaurantParams) (Restaurant, error) {
+	row := q.queryRow(ctx, q.updateRestaurantStmt, updateRestaurant,
+		arg.ID,
+		arg.Name,
+		arg.Description,
+		arg.Address,
+	)
+	var i Restaurant
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Address,
+		&i.CreatedAt,
+	)
+	return i, err
 }

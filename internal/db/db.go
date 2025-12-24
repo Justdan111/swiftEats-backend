@@ -33,11 +33,23 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.createCartStmt, err = db.PrepareContext(ctx, createCart); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateCart: %w", err)
 	}
+	if q.createMenuItemStmt, err = db.PrepareContext(ctx, createMenuItem); err != nil {
+		return nil, fmt.Errorf("error preparing query CreateMenuItem: %w", err)
+	}
 	if q.createOrderStmt, err = db.PrepareContext(ctx, createOrder); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateOrder: %w", err)
 	}
 	if q.createOrderItemStmt, err = db.PrepareContext(ctx, createOrderItem); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateOrderItem: %w", err)
+	}
+	if q.createRestaurantStmt, err = db.PrepareContext(ctx, createRestaurant); err != nil {
+		return nil, fmt.Errorf("error preparing query CreateRestaurant: %w", err)
+	}
+	if q.deleteMenuItemStmt, err = db.PrepareContext(ctx, deleteMenuItem); err != nil {
+		return nil, fmt.Errorf("error preparing query DeleteMenuItem: %w", err)
+	}
+	if q.deleteRestaurantStmt, err = db.PrepareContext(ctx, deleteRestaurant); err != nil {
+		return nil, fmt.Errorf("error preparing query DeleteRestaurant: %w", err)
 	}
 	if q.findOrderByIdempotencyStmt, err = db.PrepareContext(ctx, findOrderByIdempotency); err != nil {
 		return nil, fmt.Errorf("error preparing query FindOrderByIdempotency: %w", err)
@@ -90,11 +102,20 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.updateCartItemQuantityStmt, err = db.PrepareContext(ctx, updateCartItemQuantity); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateCartItemQuantity: %w", err)
 	}
+	if q.updateMenuItemStmt, err = db.PrepareContext(ctx, updateMenuItem); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateMenuItem: %w", err)
+	}
+	if q.updateMenuItemAvailabilityStmt, err = db.PrepareContext(ctx, updateMenuItemAvailability); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateMenuItemAvailability: %w", err)
+	}
 	if q.updateOrderPaymentAndStatusStmt, err = db.PrepareContext(ctx, updateOrderPaymentAndStatus); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateOrderPaymentAndStatus: %w", err)
 	}
 	if q.updatePaymentStatusStmt, err = db.PrepareContext(ctx, updatePaymentStatus); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdatePaymentStatus: %w", err)
+	}
+	if q.updateRestaurantStmt, err = db.PrepareContext(ctx, updateRestaurant); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateRestaurant: %w", err)
 	}
 	return &q, nil
 }
@@ -116,6 +137,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing createCartStmt: %w", cerr)
 		}
 	}
+	if q.createMenuItemStmt != nil {
+		if cerr := q.createMenuItemStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing createMenuItemStmt: %w", cerr)
+		}
+	}
 	if q.createOrderStmt != nil {
 		if cerr := q.createOrderStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing createOrderStmt: %w", cerr)
@@ -124,6 +150,21 @@ func (q *Queries) Close() error {
 	if q.createOrderItemStmt != nil {
 		if cerr := q.createOrderItemStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing createOrderItemStmt: %w", cerr)
+		}
+	}
+	if q.createRestaurantStmt != nil {
+		if cerr := q.createRestaurantStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing createRestaurantStmt: %w", cerr)
+		}
+	}
+	if q.deleteMenuItemStmt != nil {
+		if cerr := q.deleteMenuItemStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deleteMenuItemStmt: %w", cerr)
+		}
+	}
+	if q.deleteRestaurantStmt != nil {
+		if cerr := q.deleteRestaurantStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deleteRestaurantStmt: %w", cerr)
 		}
 	}
 	if q.findOrderByIdempotencyStmt != nil {
@@ -211,6 +252,16 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing updateCartItemQuantityStmt: %w", cerr)
 		}
 	}
+	if q.updateMenuItemStmt != nil {
+		if cerr := q.updateMenuItemStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateMenuItemStmt: %w", cerr)
+		}
+	}
+	if q.updateMenuItemAvailabilityStmt != nil {
+		if cerr := q.updateMenuItemAvailabilityStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateMenuItemAvailabilityStmt: %w", cerr)
+		}
+	}
 	if q.updateOrderPaymentAndStatusStmt != nil {
 		if cerr := q.updateOrderPaymentAndStatusStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing updateOrderPaymentAndStatusStmt: %w", cerr)
@@ -219,6 +270,11 @@ func (q *Queries) Close() error {
 	if q.updatePaymentStatusStmt != nil {
 		if cerr := q.updatePaymentStatusStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing updatePaymentStatusStmt: %w", cerr)
+		}
+	}
+	if q.updateRestaurantStmt != nil {
+		if cerr := q.updateRestaurantStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateRestaurantStmt: %w", cerr)
 		}
 	}
 	return err
@@ -263,8 +319,12 @@ type Queries struct {
 	addCartItemStmt                   *sql.Stmt
 	clearCartStmt                     *sql.Stmt
 	createCartStmt                    *sql.Stmt
+	createMenuItemStmt                *sql.Stmt
 	createOrderStmt                   *sql.Stmt
 	createOrderItemStmt               *sql.Stmt
+	createRestaurantStmt              *sql.Stmt
+	deleteMenuItemStmt                *sql.Stmt
+	deleteRestaurantStmt              *sql.Stmt
 	findOrderByIdempotencyStmt        *sql.Stmt
 	getAllRestaurantsStmt             *sql.Stmt
 	getCartByUserIDStmt               *sql.Stmt
@@ -282,8 +342,11 @@ type Queries struct {
 	insertPaymentStmt                 *sql.Stmt
 	removeCartItemStmt                *sql.Stmt
 	updateCartItemQuantityStmt        *sql.Stmt
+	updateMenuItemStmt                *sql.Stmt
+	updateMenuItemAvailabilityStmt    *sql.Stmt
 	updateOrderPaymentAndStatusStmt   *sql.Stmt
 	updatePaymentStatusStmt           *sql.Stmt
+	updateRestaurantStmt              *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
@@ -293,8 +356,12 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		addCartItemStmt:                   q.addCartItemStmt,
 		clearCartStmt:                     q.clearCartStmt,
 		createCartStmt:                    q.createCartStmt,
+		createMenuItemStmt:                q.createMenuItemStmt,
 		createOrderStmt:                   q.createOrderStmt,
 		createOrderItemStmt:               q.createOrderItemStmt,
+		createRestaurantStmt:              q.createRestaurantStmt,
+		deleteMenuItemStmt:                q.deleteMenuItemStmt,
+		deleteRestaurantStmt:              q.deleteRestaurantStmt,
 		findOrderByIdempotencyStmt:        q.findOrderByIdempotencyStmt,
 		getAllRestaurantsStmt:             q.getAllRestaurantsStmt,
 		getCartByUserIDStmt:               q.getCartByUserIDStmt,
@@ -312,7 +379,10 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		insertPaymentStmt:                 q.insertPaymentStmt,
 		removeCartItemStmt:                q.removeCartItemStmt,
 		updateCartItemQuantityStmt:        q.updateCartItemQuantityStmt,
+		updateMenuItemStmt:                q.updateMenuItemStmt,
+		updateMenuItemAvailabilityStmt:    q.updateMenuItemAvailabilityStmt,
 		updateOrderPaymentAndStatusStmt:   q.updateOrderPaymentAndStatusStmt,
 		updatePaymentStatusStmt:           q.updatePaymentStatusStmt,
+		updateRestaurantStmt:              q.updateRestaurantStmt,
 	}
 }
