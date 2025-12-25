@@ -14,7 +14,7 @@ func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
 }
 
-//  USER QUERIES (Read Only) 
+
 
 func (s *Service) ListRestaurants(ctx context.Context) ([]Restaurant, error) {
 	rows, err := s.repo.ListRestaurants(ctx)

@@ -16,7 +16,7 @@ func NewRepository(q *db.Queries) *Repository {
 	return &Repository{q: q}
 }
 
-//  USER QUERIES (Read Only) 
+
 
 // ListRestaurants returns all restaurants
 func (r *Repository) ListRestaurants(ctx context.Context) ([]db.Restaurant, error) {
@@ -118,7 +118,7 @@ func (r *Repository) UpdateMenuItem(ctx context.Context, id, name, description s
 	})
 }
 
-// DeleteMenuItem deletes a menu item (admin only)
+// DeleteMenuItem deletes a menu item 
 func (r *Repository) DeleteMenuItem(ctx context.Context, id string) error {
 	menuItemID, err := uuid.Parse(id)
 	if err != nil {
