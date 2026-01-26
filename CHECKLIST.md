@@ -355,6 +355,8 @@ curl tests in Postman
 
 ## 🚀 Next Command to Run
 
+
+
 ```bash
 cd /Users/danemmanuel/Desktop/SwiftEats/backend/swiftEats-backend
 # Add missing queries to internal/db/queries/queries.sql
@@ -362,3 +364,5 @@ cd /Users/danemmanuel/Desktop/SwiftEats/backend/swiftEats-backend
 sqlc generate
 go build ./cmd/server
 ```
+
+go run ./cmd/server
